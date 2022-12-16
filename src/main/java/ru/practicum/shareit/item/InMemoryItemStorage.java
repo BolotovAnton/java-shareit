@@ -1,14 +1,11 @@
 package ru.practicum.shareit.item;
 
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
 public class InMemoryItemStorage implements ItemStorage {
@@ -22,16 +19,17 @@ public class InMemoryItemStorage implements ItemStorage {
     }
 
     @Override
-    public ItemDto addItem(int userId, ItemDto itemDto) {
-        Item item = ItemMapper.itemFromItemDto(itemDto, userId, getNextId());
+    public Item addItem(Item item) {
+        item.setId(getNextId());
         items.put(item.getId(), item);
-        return ItemMapper.itemToItemDto(item);
+        return item;
     }
 
     @Override
-    public ItemDto updateItem(int userId, int itemId, ItemDto itemDto) {
-        items.put(itemId, ItemMapper.itemFromItemDto(itemDto, userId, itemId));
-        return ItemMapper.itemToItemDto(items.get(itemId));
+    public Item updateItem(int itemId, Item item) {
+        item.setId(itemId);
+        items.put(itemId, item);
+        return item;
     }
 
     @Override
@@ -40,18 +38,8 @@ public class InMemoryItemStorage implements ItemStorage {
     }
 
     @Override
-    public ItemDto findItemDtoById(Integer itemId) {
-        return ItemMapper.itemToItemDto(items.get(itemId));
-    }
-
-    @Override
-    public List<ItemDto> findAllItemsForUser(int userId) {
-        return items
-                .values()
-                .stream()
-                .filter(x -> x.getUserId() == userId)
-                .map(ItemMapper::itemToItemDto)
-                .collect(Collectors.toList());
+    public List<Item> findAllItemsForUser(int userId) {
+        return new ArrayList<>(items.values());
     }
 
     @Override

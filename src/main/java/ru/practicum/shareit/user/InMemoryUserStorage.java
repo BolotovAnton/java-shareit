@@ -1,13 +1,11 @@
 package ru.practicum.shareit.user;
 
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.dto.UserMapper;
 import ru.practicum.shareit.user.model.User;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository("InMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
@@ -21,32 +19,27 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public UserDto addUser(UserDto userDto) {
-        User user = UserMapper.userFromUserDto(userDto, getNextId());
+    public User addUser(User user) {
+        user.setId(getNextId());
         users.put(user.getId(), user);
-        return UserMapper.userToUserDto(user);
+        return user;
     }
 
     @Override
-    public UserDto updateUser(Integer userId, UserDto userDto) {
-        User user = UserMapper.userFromUserDto(userDto, userId);
-        users.put(user.getId(), user);
-        return UserMapper.userToUserDto(user);
-    }
-
-    @Override
-    public List<UserDto> findAllUsers() {
-        return users.values().stream().map(UserMapper::userToUserDto).collect(Collectors.toList());
-    }
-
-    @Override
-    public UserDto findUserDtoById(Integer userId) {
-        return UserMapper.userToUserDto(users.get(userId));
+    public User updateUser(Integer userId, User user) {
+        user.setId(userId);
+        users.put(userId, user);
+        return user;
     }
 
     @Override
     public User findUserById(Integer userId) {
         return users.get(userId);
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+        return new ArrayList<>(users.values());
     }
 
     @Override

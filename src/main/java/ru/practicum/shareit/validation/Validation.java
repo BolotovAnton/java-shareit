@@ -6,7 +6,7 @@ import ru.practicum.shareit.exceptions.UserEmailValidationException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.ItemStorage;
 import ru.practicum.shareit.user.UserStorage;
-import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.model.User;
 
 @Slf4j
 @Component
@@ -31,7 +31,7 @@ public class Validation {
     }
 
     public static void validateUserEmail(UserStorage userStorage, String email) throws UserEmailValidationException {
-        if (userStorage.findAllUsers().stream().map(UserDto::getEmail).anyMatch(x -> x.equals(email))) {
+        if (userStorage.findAllUsers().stream().map(User::getEmail).anyMatch(x -> x.equals(email))) {
             log.info("user with email " + email + " already exist");
             throw new UserEmailValidationException("user with email " + email + " already exist");
         }

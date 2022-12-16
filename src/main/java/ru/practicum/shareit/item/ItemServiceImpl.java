@@ -1,10 +1,12 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemMapper;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserStorage;
 import ru.practicum.shareit.validation.Validation;
 
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
 
@@ -23,7 +26,9 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto addItem(int userId, ItemDto itemDto) throws ValidationException {
         Validation.validateUserId(userStorage, userId);
-        return itemStorage.addItem(userId, itemDto);
+        Item item = itemStorage.addItem(ItemMapper.mapToItem(itemDto, userId));
+        log.info("item has been added");
+        return ItemMapper.mapToItemDto(item);
     }
 
     @Override
@@ -40,19 +45,28 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getAvailable() == null) {
             itemDto.setAvailable(itemStorage.findItemById(itemId).getAvailable());
         }
-        return itemStorage.updateItem(userId, itemId, itemDto);
+        Item item = itemStorage.updateItem(itemId, ItemMapper.mapToItem(itemDto, userId));
+        log.info("item has been updated");
+        return ItemMapper.mapToItemDto(item);
     }
 
     @Override
     public ItemDto findItemById(Integer itemId) throws ValidationException {
         Validation.validateItemId(itemStorage, itemId);
-        return itemStorage.findItemDtoById(itemId);
+        ItemDto itemDto = ItemMapper.mapToItemDto(itemStorage.findItemById(itemId));
+        log.info("item has been found");
+        return itemDto;
     }
 
     @Override
     public List<ItemDto> findAllItemsForUser(int userId) throws ValidationException {
         Validation.validateUserId(userStorage, userId);
-        return itemStorage.findAllItemsForUser(userId);
+        List<Item> itemList = itemStorage.findAllItemsForUser(userId)
+                .stream()
+                .filter(item -> item.getUserId() == userId)
+                .collect(Collectors.toList());
+        log.info("items has been found");
+        return ItemMapper.mapToItemDto(itemList);
     }
 
     @Override
@@ -61,10 +75,12 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         }
         String textToLowerCase = text.toLowerCase();
-        return itemStorage.findAllItems().stream()
+        List<Item> itemList = itemStorage.findAllItems()
+                .stream()
                 .filter(x -> x.getDescription().toLowerCase().contains(textToLowerCase))
                 .filter(x -> x.getAvailable().equals(true))
-                .map(ItemMapper::itemToItemDto)
                 .collect(Collectors.toList());
+        log.info("items has been found by text " + text);
+        return ItemMapper.mapToItemDto(itemList);
     }
 }

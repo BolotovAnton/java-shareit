@@ -1,7 +1,6 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.exceptions.UserEmailValidationException;
 import ru.practicum.shareit.exceptions.ValidationException;
@@ -11,7 +10,6 @@ import javax.validation.Valid;
 import java.util.List;
 
 @RestController
-@Slf4j
 @RequiredArgsConstructor
 @RequestMapping(path = "/users")
 public class UserController {
@@ -20,34 +18,26 @@ public class UserController {
 
     @PostMapping
     public UserDto addUser(@Valid @RequestBody UserDto userDto) throws UserEmailValidationException {
-        UserDto userDtoResponse = userService.addUser(userDto);
-        log.info("user has been added");
-        return userDtoResponse;
+        return userService.addUser(userDto);
     }
 
     @PatchMapping("/{userId}")
     public UserDto updateUser(@PathVariable int userId, @RequestBody UserDto userDto) throws ValidationException, UserEmailValidationException {
-        UserDto userDtoResponse = userService.updateUser(userId, userDto);
-        log.info("user has been updated");
-        return userDtoResponse;
-    }
-
-    @GetMapping
-    public List<UserDto> findAllUsers() throws ValidationException {
-        log.info("amount of users: {}", userService.findAllUsers().size());
-        return userService.findAllUsers();
+        return userService.updateUser(userId, userDto);
     }
 
     @GetMapping("/{userId}")
     public UserDto getUserById(@PathVariable int userId) throws ValidationException {
-        UserDto userDto = userService.findUserById(userId);
-        log.info("user with id={} has been found", userId);
-        return userDto;
+        return userService.findUserById(userId);
+    }
+
+    @GetMapping
+    public List<UserDto> findAllUsers() throws ValidationException {
+        return userService.findAllUsers();
     }
 
     @DeleteMapping("/{userId}")
     public void deleteUserById(@PathVariable int userId) throws ValidationException {
         userService.deleteUserById(userId);
-        log.info("user with id={} has been deleted", userId);
     }
 }

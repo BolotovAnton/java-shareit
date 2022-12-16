@@ -12,9 +12,9 @@ public interface UserService {
 
     UserDto updateUser(Integer userId, UserDto userDto) throws UserEmailValidationException, ValidationException;
 
-    List<UserDto> findAllUsers() throws ValidationException;
-
     UserDto findUserById(Integer userId) throws ValidationException;
+
+    List<UserDto> findAllUsers() throws ValidationException;
 
     void deleteUserById(int userId) throws ValidationException;
 }
