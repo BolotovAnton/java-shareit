@@ -3,68 +3,67 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemMapper;
-import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserStorage;
 import ru.practicum.shareit.validation.Validation;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
 
-    private final ItemStorage itemStorage;
+    private final ItemRepository itemRepository;
+    private final Validation validation;
 
-    private final UserStorage userStorage;
-
+    @Transactional
     @Override
-    public ItemDto addItem(int userId, ItemDto itemDto) throws ValidationException {
-        Validation.validateUserId(userStorage, userId);
-        Item item = itemStorage.addItem(ItemMapper.mapToItem(itemDto, userId));
+    public ItemDto addItem(Integer userId, ItemDto itemDto) throws ValidationException {
+        validation.validateUserId(userId);
+        Item item = itemRepository.save(ItemMapper.mapToItem(itemDto, userId));
         log.info("item has been added");
         return ItemMapper.mapToItemDto(item);
     }
 
+    @Transactional
     @Override
-    public ItemDto updateItem(int userId, int itemId, ItemDto itemDto) throws ValidationException {
-        Validation.validateUserId(userStorage, userId);
-        Validation.validateItemId(itemStorage, itemId);
-        Validation.validateUserIdForItem(itemStorage, userId, itemId);
+    public ItemDto updateItem(Integer userId, Integer itemId, ItemDto itemDto) throws ValidationException {
+        validation.validateUserId(userId);
+        validation.validateItemId(itemId);
+        validation.validateUserIdForItem(userId, itemId);
         if (itemDto.getName() == null) {
-            itemDto.setName(itemStorage.findItemById(itemId).getName());
+            itemDto.setName(itemRepository.findById(itemId).orElseThrow().getName());
         }
         if (itemDto.getDescription() == null) {
-            itemDto.setDescription(itemStorage.findItemById(itemId).getDescription());
+            itemDto.setDescription(itemRepository.findById(itemId).orElseThrow().getDescription());
         }
         if (itemDto.getAvailable() == null) {
-            itemDto.setAvailable(itemStorage.findItemById(itemId).getAvailable());
+            itemDto.setAvailable(itemRepository.findById(itemId).orElseThrow().getAvailable());
         }
-        Item item = itemStorage.updateItem(itemId, ItemMapper.mapToItem(itemDto, userId));
+        Item item = ItemMapper.mapToItem(itemDto, userId);
+        item.setId(itemId);
+        itemRepository.save(item);
         log.info("item has been updated");
         return ItemMapper.mapToItemDto(item);
     }
 
     @Override
     public ItemDto findItemById(Integer itemId) throws ValidationException {
-        Validation.validateItemId(itemStorage, itemId);
-        ItemDto itemDto = ItemMapper.mapToItemDto(itemStorage.findItemById(itemId));
+        validation.validateItemId(itemId);
+        ItemDto itemDto = ItemMapper.mapToItemDto(itemRepository.findById(itemId).orElseThrow());
         log.info("item has been found");
         return itemDto;
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<ItemDto> findAllItemsForUser(int userId) throws ValidationException {
-        Validation.validateUserId(userStorage, userId);
-        List<Item> itemList = itemStorage.findAllItemsForUser(userId)
-                .stream()
-                .filter(item -> item.getUserId() == userId)
-                .collect(Collectors.toList());
+    public List<ItemDto> findAllItemsForUser(Integer userId) throws ValidationException {
+        validation.validateUserId(userId);
+        List<Item> itemList = itemRepository.findAllByOwnerId(userId);
         log.info("items has been found");
         return ItemMapper.mapToItemDto(itemList);
     }
@@ -74,12 +73,7 @@ public class ItemServiceImpl implements ItemService {
         if (text.isBlank()) {
             return Collections.emptyList();
         }
-        String textToLowerCase = text.toLowerCase();
-        List<Item> itemList = itemStorage.findAllItems()
-                .stream()
-                .filter(x -> x.getDescription().toLowerCase().contains(textToLowerCase))
-                .filter(x -> x.getAvailable().equals(true))
-                .collect(Collectors.toList());
+        List<Item> itemList = itemRepository.findAllByAvailableIsTrueAndNameAndDescriptionContainingIgnoreCase(text);
         log.info("items has been found by text " + text);
         return ItemMapper.mapToItemDto(itemList);
     }

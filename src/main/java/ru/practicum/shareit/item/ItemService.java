@@ -6,13 +6,13 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import java.util.List;
 
 public interface ItemService {
-    ItemDto addItem(int userId, ItemDto itemDto) throws ValidationException;
+    ItemDto addItem(Integer userId, ItemDto itemDto) throws ValidationException;
 
-    ItemDto updateItem(int userId, int itemId, ItemDto itemDto) throws ValidationException;
+    ItemDto updateItem(Integer userId, Integer itemId, ItemDto itemDto) throws ValidationException;
 
     ItemDto findItemById(Integer itemId) throws ValidationException;
 
-    List<ItemDto> findAllItemsForUser(int userId) throws ValidationException;
+    List<ItemDto> findAllItemsForUser(Integer userId) throws ValidationException;
 
     List<ItemDto> searchItemsByText(String text);
 }

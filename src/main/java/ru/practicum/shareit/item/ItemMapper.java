@@ -1,6 +1,7 @@
-package ru.practicum.shareit.item.dto;
+package ru.practicum.shareit.item;
 
-import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemShortDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,7 @@ public class ItemMapper {
         Item item = new Item();
         item.setName(itemDto.getName());
         item.setDescription(itemDto.getDescription());
-        item.setUserId(userId);
+        item.setOwnerId(userId);
         item.setAvailable(itemDto.getAvailable());
         return item;
     }
@@ -31,5 +32,12 @@ public class ItemMapper {
             itemDtoList.add(mapToItemDto(item));
         }
         return itemDtoList;
+    }
+
+    public static ItemShortDto mapToItemShortDto(ItemRepository itemRepository, Integer itemId) {
+        return new ItemShortDto(
+                itemId,
+                itemRepository.findById(itemId).orElseThrow().getName()
+        );
     }
 }

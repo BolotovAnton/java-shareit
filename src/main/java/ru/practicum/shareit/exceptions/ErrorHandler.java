@@ -20,14 +20,29 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleDuplicateKeyException(DuplicateKeyException e) {
+    public ErrorResponse handleValidationException(ItemAvailableValidationException e) {
         log.debug("Error {}", e.getMessage());
-        return new ErrorResponse("Нарушение уникального индекса или первичного ключа");
+        return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleDuplicateEmailException(UserEmailValidationException e) {
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleDuplicateKeyException(DuplicateKeyException e) {
+        log.debug("Error {}", e.getMessage());
+        return new ErrorResponse("Unique index or primary key violation");
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleStartTimeOfBookingIsAfterEndTimeException(StartTimeOfBookingIsAfterEndTimeException e) {
+        log.debug("Error {}", e.getMessage());
+        return new ErrorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleStartTimeAndEndTimeOfBookingShouldBeInTheFutureException
+            (StartTimeAndEndTimeOfBookingShouldBeInTheFutureException e) {
         log.debug("Error {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }

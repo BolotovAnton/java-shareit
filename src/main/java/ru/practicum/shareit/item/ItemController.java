@@ -16,13 +16,13 @@ public class ItemController {
     private final ItemService itemService;
 
     @PostMapping
-    public ItemDto addItem(@RequestHeader("X-Sharer-User-Id") int userId,
+    public ItemDto addItem(@RequestHeader("X-Sharer-User-Id") Integer userId,
                            @Valid @RequestBody ItemDto itemDto) throws ValidationException {
         return itemService.addItem(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto updateUser(@RequestHeader("X-Sharer-User-Id") int userId,
+    public ItemDto updateUser(@RequestHeader("X-Sharer-User-Id") Integer userId,
                               @PathVariable Integer itemId,
                               @RequestBody ItemDto itemDto) throws ValidationException {
         return itemService.updateItem(userId, itemId, itemDto);
@@ -34,7 +34,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> findAllItemsForUser(@RequestHeader("X-Sharer-User-Id") int userId) throws ValidationException {
+    public List<ItemDto> findAllItemsForUser(@RequestHeader("X-Sharer-User-Id") Integer userId) throws ValidationException {
         return itemService.findAllItemsForUser(userId);
     }
 

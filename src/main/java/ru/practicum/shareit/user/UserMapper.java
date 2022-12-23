@@ -1,5 +1,6 @@
-package ru.practicum.shareit.user.dto;
-import ru.practicum.shareit.user.model.User;
+package ru.practicum.shareit.user;
+import ru.practicum.shareit.user.dto.BookerDto;
+import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,5 +28,9 @@ public class UserMapper {
             userDtoList.add(mapToUserDto(user));
         }
         return userDtoList;
+    }
+
+    public static BookerDto mapToBookerDto(Integer userId) {
+        return new BookerDto(userId);
     }
 }

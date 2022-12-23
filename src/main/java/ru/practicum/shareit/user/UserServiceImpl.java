@@ -3,11 +3,9 @@ package ru.practicum.shareit.user;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.exceptions.UserEmailValidationException;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.dto.UserMapper;
-import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.validation.Validation;
 
 import java.util.List;
@@ -15,47 +13,54 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
+    private final Validation validation;
 
-    public UserDto addUser(UserDto userDto) throws UserEmailValidationException {
-        Validation.validateUserEmail(userStorage, userDto.getEmail());
-        User user = userStorage.addUser(UserMapper.mapToUser(userDto));
+    @Transactional
+    public UserDto addUser(UserDto userDto) {
+        User user = UserMapper.mapToUser(userDto);
+        userRepository.save(user);
         log.info("user has been added");
         return UserMapper.mapToUserDto(user);
     }
 
-    public UserDto updateUser(Integer userId, UserDto userDto) throws UserEmailValidationException, ValidationException {
-        Validation.validateUserEmail(userStorage, userDto.getEmail());
-        Validation.validateUserId(userStorage, userId);
+    @Transactional
+    public UserDto updateUser(Integer userId, UserDto userDto) throws ValidationException {
+        validation.validateUserId(userId);
         if (userDto.getEmail() == null) {
-            userDto.setEmail(userStorage.findUserById(userId).getEmail());
+            userDto.setEmail(userRepository.findById(userId).orElseThrow().getEmail());
         }
         if (userDto.getName() == null) {
-            userDto.setName(userStorage.findUserById(userId).getName());
+            userDto.setName(userRepository.findById(userId).orElseThrow().getName());
         }
-        User user = userStorage.updateUser(userId, UserMapper.mapToUser(userDto));
+        User user = UserMapper.mapToUser(userDto);
+        user.setId(userId);
+        userRepository.save(user);
         log.info("user has been updated");
         return UserMapper.mapToUserDto(user);
     }
 
     public UserDto findUserById(Integer userId) throws ValidationException {
-        Validation.validateUserId(userStorage, userId);
-        UserDto userDto = UserMapper.mapToUserDto(userStorage.findUserById(userId));
+        validation.validateUserId(userId);
+        UserDto userDto = UserMapper.mapToUserDto(userRepository.findById(userId).orElseThrow());
         log.info("user with id={} has been found", userId);
         return userDto;
     }
 
+    @Transactional(readOnly = true)
     public List<UserDto> findAllUsers() {
-        List<UserDto> userDtoList = UserMapper.mapToUserDto(userStorage.findAllUsers());
-        log.info("amount of users: {}", userStorage.findAllUsers().size());
+        List<UserDto> userDtoList = UserMapper.mapToUserDto(userRepository.findAll());
+        log.info("amount of users: {}", userRepository.findAll().size());
         return userDtoList;
     }
 
-    public void deleteUserById(int userId) throws ValidationException {
-        Validation.validateUserId(userStorage, userId);
-        userStorage.deleteUserById(userId);
+    @Transactional
+    public void deleteUserById(Integer userId) throws ValidationException {
+        validation.validateUserId(userId);
+        userRepository.deleteById(userId);
         log.info("user with id={} has been deleted", userId);
     }
 }
