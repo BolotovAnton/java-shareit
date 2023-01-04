@@ -13,6 +13,7 @@ import ru.practicum.shareit.validation.Validation;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -94,7 +95,7 @@ public class BookingServiceImpl implements BookingService {
             throws ValidationException {
         validation.validateUserId(bookerId);
         List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream()
-                .filter(booking -> booking.getBooker().getId() == bookerId)
+                .filter(booking -> Objects.equals(booking.getBooker().getId(), bookerId))
                 .collect(Collectors.toList());
         return bookingMapper.mapToBookingResponseDto(bookingList);
     }
