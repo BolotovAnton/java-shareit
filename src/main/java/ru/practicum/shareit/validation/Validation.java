@@ -10,7 +10,7 @@ import ru.practicum.shareit.exceptions.StartTimeAndEndTimeOfBookingShouldBeInThe
 import ru.practicum.shareit.exceptions.StartTimeOfBookingIsAfterEndTimeException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
-import ru.practicum.shareit.item.Item;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;

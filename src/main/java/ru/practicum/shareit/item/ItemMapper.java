@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemShortDto;
+import ru.practicum.shareit.item.model.Item;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,12 +10,13 @@ import java.util.List;
 public class ItemMapper {
 
     public static ItemDto mapToItemDto(Item item) {
-        return new ItemDto(
-                item.getId(),
-                item.getName(),
-                item.getDescription(),
-                item.getAvailable()
-        );
+        ItemDto itemDto = new ItemDto();
+        itemDto.setId(item.getId());
+        itemDto.setName(item.getName());
+        itemDto.setDescription(item.getDescription());
+        itemDto.setAvailable(item.getAvailable());
+        itemDto.setComments(CommentMapper.mapToCommentDto(item.getComments()));
+        return itemDto;
     }
 
     public static Item mapToItem(ItemDto itemDto, Integer userId) {
@@ -34,10 +36,10 @@ public class ItemMapper {
         return itemDtoList;
     }
 
-    public static ItemShortDto mapToItemShortDto(ItemRepository itemRepository, Integer itemId) {
+    public static ItemShortDto mapToItemShortDto(Item item) {
         return new ItemShortDto(
-                itemId,
-                itemRepository.findById(itemId).orElseThrow().getName()
+                item.getId(),
+                item.getName()
         );
     }
 }
