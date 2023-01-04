@@ -42,8 +42,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleStartTimeAndEndTimeOfBookingShouldBeInTheFutureException
-            (StartTimeAndEndTimeOfBookingShouldBeInTheFutureException e) {
+    public ErrorResponse handleStartTimeAndEndTimeOfBookingShouldBeInTheFutureException(StartTimeAndEndTimeOfBookingShouldBeInTheFutureException e) {
         log.debug("Error {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
