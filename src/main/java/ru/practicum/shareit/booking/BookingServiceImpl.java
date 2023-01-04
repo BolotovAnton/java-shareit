@@ -6,54 +6,68 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
-import ru.practicum.shareit.exceptions.ItemAvailableValidationException;
-import ru.practicum.shareit.exceptions.StartTimeAndEndTimeOfBookingShouldBeInTheFutureException;
-import ru.practicum.shareit.exceptions.StartTimeOfBookingIsAfterEndTimeException;
-import ru.practicum.shareit.exceptions.ValidationException;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.exceptions.*;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.validation.Validation;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @Slf4j
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class BookingServiceImpl implements BookingService{
+@Transactional(readOnly = true)
+public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final ItemRepository itemRepository;
     private final Validation validation;
+    private final BookingMapper bookingMapper;
 
     @Transactional
     @Override
-    public BookingResponseDto addBooking(Integer userId, BookingDto bookingDto) throws ValidationException,
-            ItemAvailableValidationException, StartTimeOfBookingIsAfterEndTimeException,
-            StartTimeAndEndTimeOfBookingShouldBeInTheFutureException {
+    public BookingResponseDto addBooking(Integer userId, BookingDto bookingDto) throws
+            ValidationException,
+            StartTimeOfBookingIsAfterEndTimeException,
+            StartTimeAndEndTimeOfBookingShouldBeInTheFutureException,
+            ItemAvailableValidationException {
         validation.validateUserId(userId);
         validation.validateBookingDto(bookingDto);
-        Booking booking = BookingMapper.mapToBooking(bookingDto, userId);
+        Booking booking = bookingMapper.mapToBooking(bookingDto, userId);
+        if (booking.getItem().getOwnerId() == userId) {
+            log.info("user with id = " + userId + "can't book his own item");
+            throw new ValidationException("user with id = " + userId + "can't book his own item");
+        }
         bookingRepository.save(booking);
         log.info("booking has been added");
-        return BookingMapper.mapToBookingResponseDto(itemRepository, booking);
+        return bookingMapper.mapToBookingResponseDto(booking);
     }
 
     @Override
-    public BookingResponseDto approveBooking(Integer userId, Integer bookingId, boolean approved) throws Exception {
+    @Transactional
+    public BookingResponseDto approveBooking(Integer userId, Integer bookingId, boolean approved) throws
+            ValidationException, BookingStatusException {
         validation.validateUserId(userId);
         validation.validateBookingId(bookingId);
-        int ownerOfItemId = itemRepository.findById(bookingRepository
-                        .findById(bookingId)
-                        .orElseThrow()
-                        .getItemId()).orElseThrow().getOwnerId();
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow();
+        if (!booking.getStatus().equals(BookingStatus.WAITING)) {
+            log.info("it's impossible to change status of booking after approved");
+            throw new BookingStatusException("it's impossible to change status of booking after approved");
+        }
+        int ownerOfItemId = booking.getItem().getOwnerId();
         if (ownerOfItemId != userId) {
             log.info("user with id = " + userId + " is not the owner for item with id = " + ownerOfItemId);
             throw new ValidationException("user with id = " + userId + " is not the owner for item with id = " + ownerOfItemId);
         }
         if (approved) {
-            bookingRepository.findById(bookingId).orElseThrow().setStatus(BookingStatus.APPROVED);
+            booking.setStatus(BookingStatus.APPROVED);
         } else {
-            bookingRepository.findById(bookingId).orElseThrow().setStatus(BookingStatus.REJECTED);
+            booking.setStatus(BookingStatus.REJECTED);
         }
-        return BookingMapper.mapToBookingResponseDto(itemRepository, bookingRepository.findById(bookingId).orElseThrow());
+        bookingRepository.save(booking);
+        return bookingMapper.mapToBookingResponseDto(bookingRepository.findById(bookingId).orElseThrow());
     }
 
     @Override
@@ -63,13 +77,55 @@ public class BookingServiceImpl implements BookingService{
         int ownerOfItemId = itemRepository.findById(bookingRepository
                 .findById(bookingId)
                 .orElseThrow()
-                .getItemId()).orElseThrow().getOwnerId();
-        int authorOfBookingId = bookingRepository.findById(bookingId).orElseThrow().getBookerId();
+                .getItem().getId()).orElseThrow().getOwnerId();
+        int authorOfBookingId = bookingRepository.findById(bookingId).orElseThrow().getBooker().getId();
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow();
         if (ownerOfItemId == userId || authorOfBookingId == userId) {
-            return BookingMapper.mapToBookingResponseDto(itemRepository, bookingRepository.findById(bookingId).orElseThrow());
+            return bookingMapper.mapToBookingResponseDto(booking);
         } else {
             log.info("user with id " + userId + " does not have enough rights to view booking with id = " + bookingId);
-            throw new ValidationException("user with id " + userId + " does not have enough rights to view booking with id = " + bookingId);
+            throw new ValidationException("user with id " + userId +
+                    " does not have enough rights to view booking with id = " + bookingId);
+        }
+    }
+
+    @Override
+    public List<BookingResponseDto> findAllBookingsForCurrentUser(Integer bookerId, BookingState state)
+            throws ValidationException {
+        validation.validateUserId(bookerId);
+        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream()
+                .filter(booking -> booking.getBooker().getId() == bookerId)
+                .collect(Collectors.toList());
+        return bookingMapper.mapToBookingResponseDto(bookingList);
+    }
+
+    @Override
+    public List<BookingResponseDto> findAllBookingsForItemsOfOwner(Integer ownerId, BookingState state) throws ValidationException {
+        validation.validateUserId(ownerId);
+        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream()
+                .filter(booking -> booking.getItem().getOwnerId() == ownerId)
+                .collect(Collectors.toList());
+        if (bookingList.isEmpty()) {
+            log.info("owner with id = " + ownerId + " doesn't have any items");
+            throw new ValidationException("owner with id = " + ownerId + " doesn't have any items");
+        }
+        return bookingMapper.mapToBookingResponseDto(bookingList);
+    }
+
+    private List<Booking> getAllBookingsWithDependenceOfState(BookingState state) {
+        switch (state) {
+            case WAITING:
+                return bookingRepository.getBookingsByStatusOrderByStartDesc(BookingStatus.WAITING);
+            case REJECTED:
+                return bookingRepository.getBookingsByStatusOrderByStartDesc(BookingStatus.REJECTED);
+            case FUTURE:
+                return bookingRepository.getBookingsByStartAfterOrderByStartDesc(LocalDateTime.now());
+            case PAST:
+                return bookingRepository.getBookingsByEndBeforeOrderByStartDesc(LocalDateTime.now());
+            case CURRENT:
+                return bookingRepository.getBookingsByCurrentOrderByStartDesc();
+            default:
+                return bookingRepository.getBookingsByOrderByStartDesc();
         }
     }
 }

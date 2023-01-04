@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.validation.Validation;
 
 import java.util.List;
@@ -50,7 +51,6 @@ public class UserServiceImpl implements UserService {
         return userDto;
     }
 
-    @Transactional(readOnly = true)
     public List<UserDto> findAllUsers() {
         List<UserDto> userDtoList = UserMapper.mapToUserDto(userRepository.findAll());
         log.info("amount of users: {}", userRepository.findAll().size());

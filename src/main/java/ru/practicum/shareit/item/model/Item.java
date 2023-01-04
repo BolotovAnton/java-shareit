@@ -1,13 +1,15 @@
-package ru.practicum.shareit.item;
+package ru.practicum.shareit.item.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.practicum.shareit.booking.model.Booking;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -33,6 +35,12 @@ public class Item {
 
     @NotNull
     private Boolean available;
+
+    @OneToMany(mappedBy = "item")
+    private Set<Booking> bookings;
+
+    @OneToMany(mappedBy = "item")
+    private Set<Comment> comments;
 
     @Override
     public boolean equals(Object o) {
