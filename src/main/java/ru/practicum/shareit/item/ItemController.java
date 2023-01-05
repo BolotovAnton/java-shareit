@@ -2,8 +2,6 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.exceptions.CommentException;
-import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
@@ -19,25 +17,25 @@ public class ItemController {
 
     @PostMapping
     public ItemDto addItem(@RequestHeader("X-Sharer-User-Id") Integer userId,
-                           @Valid @RequestBody ItemDto itemDto) throws ValidationException {
+                           @Valid @RequestBody ItemDto itemDto) {
         return itemService.addItem(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
     public ItemDto updateUser(@RequestHeader("X-Sharer-User-Id") Integer userId,
                               @PathVariable Integer itemId,
-                              @RequestBody ItemDto itemDto) throws ValidationException {
+                              @RequestBody ItemDto itemDto) {
         return itemService.updateItem(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
     public ItemDto findItemById(@RequestHeader("X-Sharer-User-Id") Integer userId,
-                                @PathVariable Integer itemId) throws ValidationException {
+                                @PathVariable Integer itemId) {
         return itemService.findItemById(userId, itemId);
     }
 
     @GetMapping
-    public List<ItemDto> findAllItemsForUser(@RequestHeader("X-Sharer-User-Id") Integer userId) throws ValidationException {
+    public List<ItemDto> findAllItemsForUser(@RequestHeader("X-Sharer-User-Id") Integer userId) {
         return itemService.findAllItemsForUser(userId);
     }
 
@@ -49,8 +47,7 @@ public class ItemController {
     @PostMapping("/{itemId}/comment")
     public CommentDto addComment(@RequestHeader("X-Sharer-User-Id") Integer userId,
                                  @PathVariable Integer itemId,
-                                 @RequestBody CommentDto commentDto)
-            throws ValidationException, CommentException {
+                                 @Valid @RequestBody CommentDto commentDto) {
         return itemService.addComment(userId, itemId, commentDto);
     }
 }

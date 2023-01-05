@@ -6,13 +6,15 @@ import ru.practicum.shareit.booking.dto.BookingResponse2Dto;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 import java.util.Set;
 
 @Getter
 @Setter
 public class ItemDto {
 
-    private int id;
+    @Positive
+    private Integer id;
 
     @NotBlank
     private String name;

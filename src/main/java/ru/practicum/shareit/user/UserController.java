@@ -2,8 +2,6 @@ package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.exceptions.ItemAvailableValidationException;
-import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import javax.validation.Valid;
@@ -22,23 +20,22 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}")
-    public UserDto updateUser(@PathVariable Integer userId, @RequestBody UserDto userDto) throws
-            ValidationException, ItemAvailableValidationException {
+    public UserDto updateUser(@PathVariable Integer userId, @RequestBody UserDto userDto) {
         return userService.updateUser(userId, userDto);
     }
 
     @GetMapping("/{userId}")
-    public UserDto getUserById(@PathVariable Integer userId) throws ValidationException {
+    public UserDto getUserById(@PathVariable Integer userId) {
         return userService.findUserById(userId);
     }
 
     @GetMapping
-    public List<UserDto> findAllUsers() throws ValidationException {
+    public List<UserDto> findAllUsers() {
         return userService.findAllUsers();
     }
 
     @DeleteMapping("/{userId}")
-    public void deleteUserById(@PathVariable Integer userId) throws ValidationException {
+    public void deleteUserById(@PathVariable Integer userId) {
         userService.deleteUserById(userId);
     }
 }

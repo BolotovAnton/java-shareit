@@ -8,7 +8,6 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.exceptions.CommentException;
-import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Comment;
@@ -36,7 +35,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     @Override
-    public ItemDto addItem(Integer userId, ItemDto itemDto) throws ValidationException {
+    public ItemDto addItem(Integer userId, ItemDto itemDto) {
         validation.validateUserId(userId);
         Item item = itemRepository.save(ItemMapper.mapToItem(itemDto, userId));
         log.info("item has been added");
@@ -45,7 +44,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     @Override
-    public ItemDto updateItem(Integer userId, Integer itemId, ItemDto itemDto) throws ValidationException {
+    public ItemDto updateItem(Integer userId, Integer itemId, ItemDto itemDto) {
         validation.validateUserId(userId);
         validation.validateItemId(itemId);
         validation.validateUserIdForItem(userId, itemId);
@@ -67,7 +66,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     @Override
-    public ItemDto findItemById(Integer userId, Integer itemId) throws ValidationException {
+    public ItemDto findItemById(Integer userId, Integer itemId) {
         validation.validateItemId(itemId);
         Item item = itemRepository.findById(itemId).orElseThrow();
         ItemDto itemDto = setNextAndLastBookingForItem(item, LocalDateTime.now(), userId);
@@ -76,7 +75,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> findAllItemsForUser(Integer userId) throws ValidationException {
+    public List<ItemDto> findAllItemsForUser(Integer userId) {
         validation.validateUserId(userId);
         List<Item> itemList = itemRepository.findAllByOwnerId(userId);
         List<ItemDto> itemDtoList = new ArrayList<>();
@@ -99,8 +98,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Transactional
     @Override
-    public CommentDto addComment(Integer userId, Integer itemId, CommentDto commentDto)
-            throws ValidationException, CommentException {
+    public CommentDto addComment(Integer userId, Integer itemId, CommentDto commentDto) {
         validation.validateUserId(userId);
         validation.validateItemId(itemId);
         if (commentDto.getText().isBlank()) {

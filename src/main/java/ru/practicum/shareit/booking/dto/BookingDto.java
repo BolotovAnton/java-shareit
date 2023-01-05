@@ -4,13 +4,15 @@ import lombok.Getter;
 import lombok.Setter;
 import ru.practicum.shareit.booking.BookingStatus;
 
+import javax.validation.constraints.Positive;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 public class BookingDto {
 
-    private int id;
+    @Positive
+    private Integer id;
 
     private int itemId;
 

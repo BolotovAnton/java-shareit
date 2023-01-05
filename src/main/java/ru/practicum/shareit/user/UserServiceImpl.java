@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.validation.Validation;
@@ -29,7 +28,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public UserDto updateUser(Integer userId, UserDto userDto) throws ValidationException {
+    public UserDto updateUser(Integer userId, UserDto userDto) {
         validation.validateUserId(userId);
         if (userDto.getEmail() == null) {
             userDto.setEmail(userRepository.findById(userId).orElseThrow().getEmail());
@@ -44,7 +43,7 @@ public class UserServiceImpl implements UserService {
         return UserMapper.mapToUserDto(user);
     }
 
-    public UserDto findUserById(Integer userId) throws ValidationException {
+    public UserDto findUserById(Integer userId) {
         validation.validateUserId(userId);
         UserDto userDto = UserMapper.mapToUserDto(userRepository.findById(userId).orElseThrow());
         log.info("user with id={} has been found", userId);
@@ -58,7 +57,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public void deleteUserById(Integer userId) throws ValidationException {
+    public void deleteUserById(Integer userId) {
         validation.validateUserId(userId);
         userRepository.deleteById(userId);
         log.info("user with id={} has been deleted", userId);

@@ -29,11 +29,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     @Override
-    public BookingResponseDto addBooking(Integer userId, BookingDto bookingDto) throws
-            ValidationException,
-            StartTimeOfBookingIsAfterEndTimeException,
-            StartTimeAndEndTimeOfBookingShouldBeInTheFutureException,
-            ItemAvailableValidationException {
+    public BookingResponseDto addBooking(Integer userId, BookingDto bookingDto) {
         validation.validateUserId(userId);
         validation.validateBookingDto(bookingDto);
         Booking booking = bookingMapper.mapToBooking(bookingDto, userId);
@@ -48,8 +44,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingResponseDto approveBooking(Integer userId, Integer bookingId, boolean approved) throws
-            ValidationException, BookingStatusException {
+    public BookingResponseDto approveBooking(Integer userId, Integer bookingId, boolean approved) {
         validation.validateUserId(userId);
         validation.validateBookingId(bookingId);
         Booking booking = bookingRepository.findById(bookingId).orElseThrow();
@@ -72,40 +67,31 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public BookingResponseDto findBookingById(Integer userId, Integer bookingId) throws ValidationException {
+    public BookingResponseDto findBookingById(Integer userId, Integer bookingId) {
         validation.validateUserId(userId);
         validation.validateBookingId(bookingId);
-        int ownerOfItemId = itemRepository.findById(bookingRepository
-                .findById(bookingId)
-                .orElseThrow()
-                .getItem().getId()).orElseThrow().getOwnerId();
+        int ownerOfItemId = itemRepository.findById(bookingRepository.findById(bookingId).orElseThrow().getItem().getId()).orElseThrow().getOwnerId();
         int authorOfBookingId = bookingRepository.findById(bookingId).orElseThrow().getBooker().getId();
         Booking booking = bookingRepository.findById(bookingId).orElseThrow();
         if (ownerOfItemId == userId || authorOfBookingId == userId) {
             return bookingMapper.mapToBookingResponseDto(booking);
         } else {
             log.info("user with id " + userId + " does not have enough rights to view booking with id = " + bookingId);
-            throw new ValidationException("user with id " + userId +
-                    " does not have enough rights to view booking with id = " + bookingId);
+            throw new ValidationException("user with id " + userId + " does not have enough rights to view booking with id = " + bookingId);
         }
     }
 
     @Override
-    public List<BookingResponseDto> findAllBookingsForCurrentUser(Integer bookerId, BookingState state)
-            throws ValidationException {
+    public List<BookingResponseDto> findAllBookingsForCurrentUser(Integer bookerId, BookingState state) {
         validation.validateUserId(bookerId);
-        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream()
-                .filter(booking -> Objects.equals(booking.getBooker().getId(), bookerId))
-                .collect(Collectors.toList());
+        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream().filter(booking -> Objects.equals(booking.getBooker().getId(), bookerId)).collect(Collectors.toList());
         return bookingMapper.mapToBookingResponseDto(bookingList);
     }
 
     @Override
-    public List<BookingResponseDto> findAllBookingsForItemsOfOwner(Integer ownerId, BookingState state) throws ValidationException {
+    public List<BookingResponseDto> findAllBookingsForItemsOfOwner(Integer ownerId, BookingState state) {
         validation.validateUserId(ownerId);
-        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream()
-                .filter(booking -> booking.getItem().getOwnerId() == ownerId)
-                .collect(Collectors.toList());
+        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream().filter(booking -> booking.getItem().getOwnerId() == ownerId).collect(Collectors.toList());
         if (bookingList.isEmpty()) {
             log.info("owner with id = " + ownerId + " doesn't have any items");
             throw new ValidationException("owner with id = " + ownerId + " doesn't have any items");
