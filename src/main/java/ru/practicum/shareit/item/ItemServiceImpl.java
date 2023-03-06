@@ -2,18 +2,21 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.exceptions.CommentException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.UserRepository;
-import ru.practicum.shareit.validation.Validation;
+import ru.practicum.shareit.util.Validation;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,14 +35,19 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
     private final Validation validation;
     private final BookingMapper bookingMapper;
+    private final ItemRequestRepository itemRequestRepository;
 
     @Transactional
     @Override
     public ItemDto addItem(Integer userId, ItemDto itemDto) {
         validation.validateUserId(userId);
-        Item item = itemRepository.save(ItemMapper.mapToItem(itemDto, userId));
+        Item item = ItemMapper.mapToItem(itemDto, userId);
+        if (itemDto.getRequestId() != null) {
+            item.setRequest(itemRequestRepository.findById(itemDto.getRequestId()).orElseThrow());
+        }
+        Item savedItem = itemRepository.save(item);
         log.info("item has been added");
-        return ItemMapper.mapToItemDto(item);
+        return ItemMapper.mapToItemDto(savedItem);
     }
 
     @Transactional
@@ -75,9 +83,9 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> findAllItemsForUser(Integer userId) {
+    public List<ItemDto> findAllItemsForUser(Integer userId, PageRequest pageRequest) {
         validation.validateUserId(userId);
-        List<Item> itemList = itemRepository.findAllByOwnerId(userId);
+        Page<Item> itemList = itemRepository.findAllByOwnerId(userId, pageRequest);
         List<ItemDto> itemDtoList = new ArrayList<>();
         for (Item item : itemList) {
             itemDtoList.add(setNextAndLastBookingForItem(item, LocalDateTime.now(), userId));
@@ -87,11 +95,14 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> searchItemsByText(String text) {
+    public List<ItemDto> searchItemsByText(String text, PageRequest pageRequest) {
         if (text.isBlank()) {
             return Collections.emptyList();
         }
-        List<Item> itemList = itemRepository.findAllByAvailableIsTrueAndNameAndDescriptionContainingIgnoreCase(text);
+        Page<Item> itemList = itemRepository.findAllByAvailableIsTrueAndNameAndDescriptionContainingIgnoreCase(
+                text,
+                pageRequest
+        );
         log.info("items has been found by text " + text);
         return ItemMapper.mapToItemDto(itemList);
     }
@@ -114,18 +125,18 @@ public class ItemServiceImpl implements ItemService {
         comment.setItem(itemRepository.findById(itemId).orElseThrow());
         comment.setAuthor(userRepository.findById(userId).orElseThrow());
         comment.setCreated(LocalDateTime.now());
-        commentRepository.save(comment);
+        Comment saveComment = commentRepository.save(comment);
         log.info("comment has been added");
-        return CommentMapper.mapToCommentDto(comment);
+        return CommentMapper.mapToCommentDto(saveComment);
     }
 
     private ItemDto setNextAndLastBookingForItem(Item item, LocalDateTime localDateTime, Integer userId) {
         Booking nextBooking = bookingRepository.findFirstByItemAndStartAfterOrderByStartAsc(item, localDateTime);
         Booking lastBooking = bookingRepository.findFirstByItemAndStartBeforeOrderByStartDesc(item, localDateTime);
         ItemDto itemDto = ItemMapper.mapToItemDto(item);
-        if (nextBooking != null && lastBooking != null && item.getOwnerId() == userId) {
-            itemDto.setNextBooking(bookingMapper.mapToBookingResponse2Dto(nextBooking));
-            itemDto.setLastBooking(bookingMapper.mapToBookingResponse2Dto(lastBooking));
+        if (item.getOwnerId() == userId) {
+            itemDto.setNextBooking(bookingMapper.mapToBookingShortDto(nextBooking));
+            itemDto.setLastBooking(bookingMapper.mapToBookingShortDto(lastBooking));
         }
         return itemDto;
     }

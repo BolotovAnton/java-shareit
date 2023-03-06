@@ -3,7 +3,7 @@ package ru.practicum.shareit.booking;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.dto.BookingResponse2Dto;
+import ru.practicum.shareit.booking.dto.BookingShortDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.ItemRepository;
@@ -49,14 +49,14 @@ public class BookingMapper {
         return bookingDtoList;
     }
 
-    public BookingResponse2Dto mapToBookingResponse2Dto(Booking booking) {
-        BookingResponse2Dto bookingResponse2Dto = new BookingResponse2Dto();
-        bookingResponse2Dto.setId(booking.getId());
-        bookingResponse2Dto.setItem(ItemMapper.mapToItemShortDto(itemRepository.findById(booking.getItem().getId()).orElseThrow()));
-        bookingResponse2Dto.setBookerId(booking.getBooker().getId());
-        bookingResponse2Dto.setStart(booking.getStart());
-        bookingResponse2Dto.setEnd(booking.getEnd());
-        bookingResponse2Dto.setStatus(booking.getStatus());
-        return bookingResponse2Dto;
+    public BookingShortDto mapToBookingShortDto(Booking booking) {
+        if (booking == null) {
+            return null;
+        } else {
+            BookingShortDto bookingShortDto = new BookingShortDto();
+            bookingShortDto.setId(booking.getId());
+            bookingShortDto.setBookerId(booking.getBooker().getId());
+            return bookingShortDto;
+        }
     }
 }

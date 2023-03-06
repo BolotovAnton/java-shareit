@@ -7,7 +7,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class BookerDto {
+public class RequesterDto {
 
     private int id;
+
+    private String name;
 }
