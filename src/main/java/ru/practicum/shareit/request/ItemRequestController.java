@@ -8,6 +8,8 @@ import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.util.MyPageRequest;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @RestController
@@ -25,16 +27,16 @@ public class ItemRequestController {
 
     @GetMapping
     public List<ItemRequestDto> findRequestsOfUser(@RequestHeader("X-Sharer-User-Id") Integer userId,
-                                                   @RequestParam(defaultValue = "0") Integer from,
-                                                   @RequestParam(defaultValue = "10") Integer size) {
+                                                   @RequestParam(defaultValue = "0") @Min(0) Integer from,
+                                                   @RequestParam(defaultValue = "10") @Min(1) Integer size) {
         PageRequest pageRequest = new MyPageRequest(from, size, Sort.by("id").ascending());
         return itemRequestService.findRequestsOfUser(userId, pageRequest);
     }
 
     @GetMapping("/all")
     public List<ItemRequestDto> findAllRequests(@RequestHeader("X-Sharer-User-Id") Integer userId,
-                                                @RequestParam(defaultValue = "0") Integer from,
-                                                @RequestParam(defaultValue = "10") Integer size) {
+                                                @RequestParam(defaultValue = "0") @Min(0) Integer from,
+                                                @RequestParam(defaultValue = "10") @Min(1) Integer size) {
         PageRequest pageRequest = new MyPageRequest(from, size, Sort.by("id").ascending());
         return itemRequestService.findAllRequests(userId, pageRequest);
     }
