@@ -1,11 +1,15 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.util.MyPageRequest;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @RestController
@@ -35,13 +39,19 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> findAllItemsForUser(@RequestHeader("X-Sharer-User-Id") Integer userId) {
-        return itemService.findAllItemsForUser(userId);
+    public List<ItemDto> findAllItemsForUser(@RequestHeader("X-Sharer-User-Id") Integer userId,
+                                             @RequestParam(defaultValue = "0") @Min(0) Integer from,
+                                             @RequestParam(defaultValue = "10") @Min(1) Integer size) {
+        PageRequest pageRequest = new MyPageRequest(from, size, Sort.by("id").ascending());
+        return itemService.findAllItemsForUser(userId, pageRequest);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> searchItemByText(@RequestParam String text) {
-        return itemService.searchItemsByText(text);
+    public List<ItemDto> searchItemByText(@RequestParam String text,
+                                          @RequestParam(defaultValue = "0") @Min(0) Integer from,
+                                          @RequestParam(defaultValue = "10") @Min(1) Integer size) {
+        PageRequest pageRequest = new MyPageRequest(from, size, Sort.by("id").ascending());
+        return itemService.searchItemsByText(text, pageRequest);
     }
 
     @PostMapping("/{itemId}/comment")

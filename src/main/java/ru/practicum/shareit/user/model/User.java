@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.model.Comment;
+import ru.practicum.shareit.request.model.ItemRequest;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -36,6 +37,22 @@ public class User {
 
     @OneToMany(mappedBy = "author")
     private Set<Comment> comments;
+
+    @OneToMany(mappedBy = "requester")
+    private Set<ItemRequest> requests;
+
+    public User(Integer id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+    }
+
+    public User(Integer id, String name, String email, Set<ItemRequest> requests) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.requests = requests;
+    }
 
     @Override
     public boolean equals(Object o) {

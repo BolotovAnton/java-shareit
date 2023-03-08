@@ -2,19 +2,20 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.exceptions.*;
+import ru.practicum.shareit.exceptions.BookingStatusException;
+import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
-import ru.practicum.shareit.validation.Validation;
+import ru.practicum.shareit.util.Validation;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -35,11 +36,11 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingMapper.mapToBooking(bookingDto, userId);
         if (booking.getItem().getOwnerId() == userId) {
             log.info("user with id = " + userId + "can't book his own item");
-            throw new ValidationException("user with id = " + userId + "can't book his own item");
+            throw new ValidationException("user with id = " + userId + " can't book his own item");
         }
-        bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
         log.info("booking has been added");
-        return bookingMapper.mapToBookingResponseDto(booking);
+        return bookingMapper.mapToBookingResponseDto(savedBooking);
     }
 
     @Override
@@ -55,43 +56,63 @@ public class BookingServiceImpl implements BookingService {
         int ownerOfItemId = booking.getItem().getOwnerId();
         if (ownerOfItemId != userId) {
             log.info("user with id = " + userId + " is not the owner for item with id = " + ownerOfItemId);
-            throw new ValidationException("user with id = " + userId + " is not the owner for item with id = " + ownerOfItemId);
+            throw new ValidationException(
+                    "user with id = " + userId + " is not the owner for item with id = " + ownerOfItemId
+            );
         }
         if (approved) {
             booking.setStatus(BookingStatus.APPROVED);
         } else {
             booking.setStatus(BookingStatus.REJECTED);
         }
-        bookingRepository.save(booking);
-        return bookingMapper.mapToBookingResponseDto(bookingRepository.findById(bookingId).orElseThrow());
+        Booking approvedBooking = bookingRepository.save(booking);
+        return bookingMapper.mapToBookingResponseDto(approvedBooking);
     }
 
     @Override
     public BookingResponseDto findBookingById(Integer userId, Integer bookingId) {
         validation.validateUserId(userId);
         validation.validateBookingId(bookingId);
-        int ownerOfItemId = itemRepository.findById(bookingRepository.findById(bookingId).orElseThrow().getItem().getId()).orElseThrow().getOwnerId();
-        int authorOfBookingId = bookingRepository.findById(bookingId).orElseThrow().getBooker().getId();
         Booking booking = bookingRepository.findById(bookingId).orElseThrow();
+        int ownerOfItemId = itemRepository.findById(booking.getItem().getId()).orElseThrow().getOwnerId();
+        int authorOfBookingId = booking.getBooker().getId();
         if (ownerOfItemId == userId || authorOfBookingId == userId) {
             return bookingMapper.mapToBookingResponseDto(booking);
         } else {
             log.info("user with id " + userId + " does not have enough rights to view booking with id = " + bookingId);
-            throw new ValidationException("user with id " + userId + " does not have enough rights to view booking with id = " + bookingId);
+            throw new ValidationException(
+                    "user with id = " + userId + " does not have enough rights to view booking with id = " + bookingId
+            );
         }
     }
 
     @Override
-    public List<BookingResponseDto> findAllBookingsForCurrentUser(Integer bookerId, BookingState state) {
+    public List<BookingResponseDto> findAllBookingsForCurrentUser(
+            Integer bookerId,
+            BookingState state,
+            PageRequest pageRequest
+    ) {
         validation.validateUserId(bookerId);
-        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream().filter(booking -> Objects.equals(booking.getBooker().getId(), bookerId)).collect(Collectors.toList());
+        List<Booking> bookingList = getAllBookingsForCurrentUserWithDependenceOfState(
+                bookerId,
+                state,
+                pageRequest
+        ).toList();
         return bookingMapper.mapToBookingResponseDto(bookingList);
     }
 
     @Override
-    public List<BookingResponseDto> findAllBookingsForItemsOfOwner(Integer ownerId, BookingState state) {
+    public List<BookingResponseDto> findAllBookingsForOwnerOfItems(
+            Integer ownerId,
+            BookingState state,
+            PageRequest pageRequest
+    ) {
         validation.validateUserId(ownerId);
-        List<Booking> bookingList = getAllBookingsWithDependenceOfState(state).stream().filter(booking -> booking.getItem().getOwnerId() == ownerId).collect(Collectors.toList());
+        List<Booking> bookingList = getAllBookingsForItemsOfOwnerWithDependenceOfState(
+                ownerId,
+                state,
+                pageRequest
+        ).toList();
         if (bookingList.isEmpty()) {
             log.info("owner with id = " + ownerId + " doesn't have any items");
             throw new ValidationException("owner with id = " + ownerId + " doesn't have any items");
@@ -99,20 +120,53 @@ public class BookingServiceImpl implements BookingService {
         return bookingMapper.mapToBookingResponseDto(bookingList);
     }
 
-    private List<Booking> getAllBookingsWithDependenceOfState(BookingState state) {
+    private Page<Booking> getAllBookingsForCurrentUserWithDependenceOfState(Integer bookerId,
+                                                                            BookingState state,
+                                                                            PageRequest pageRequest) {
         switch (state) {
             case WAITING:
-                return bookingRepository.getBookingsByStatusOrderByStartDesc(BookingStatus.WAITING);
+                return bookingRepository
+                        .getBookingsByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.WAITING, pageRequest);
             case REJECTED:
-                return bookingRepository.getBookingsByStatusOrderByStartDesc(BookingStatus.REJECTED);
+                return bookingRepository
+                        .getBookingsByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.REJECTED, pageRequest);
             case FUTURE:
-                return bookingRepository.getBookingsByStartAfterOrderByStartDesc(LocalDateTime.now());
+                return bookingRepository
+                        .getBookingsByBookerIdAndStartAfterOrderByStartDesc(bookerId, LocalDateTime.now(), pageRequest);
             case PAST:
-                return bookingRepository.getBookingsByEndBeforeOrderByStartDesc(LocalDateTime.now());
+                return bookingRepository
+                        .getBookingsByBookerIdAndEndBeforeOrderByStartDesc(bookerId, LocalDateTime.now(), pageRequest);
             case CURRENT:
-                return bookingRepository.getBookingsByCurrentOrderByStartDesc();
+                return bookingRepository
+                        .getBookingsByBookerIdAndCurrentOrderByStartDesc(bookerId, pageRequest);
             default:
-                return bookingRepository.getBookingsByOrderByStartDesc();
+                return bookingRepository
+                        .getBookingsByBookerIdOrderByStartDesc(bookerId, pageRequest);
+        }
+    }
+
+    private Page<Booking> getAllBookingsForItemsOfOwnerWithDependenceOfState(Integer ownerId,
+                                                                             BookingState state,
+                                                                             PageRequest pageRequest) {
+        switch (state) {
+            case WAITING:
+                return bookingRepository
+                        .getBookingsByItem_OwnerIdAndStatusOrderByStartDesc(ownerId, BookingStatus.WAITING, pageRequest);
+            case REJECTED:
+                return bookingRepository
+                        .getBookingsByItem_OwnerIdAndStatusOrderByStartDesc(ownerId, BookingStatus.REJECTED, pageRequest);
+            case FUTURE:
+                return bookingRepository
+                        .getBookingsByItem_OwnerIdAndStartAfterOrderByStartDesc(ownerId, LocalDateTime.now(), pageRequest);
+            case PAST:
+                return bookingRepository
+                        .getBookingsByItem_OwnerIdAndEndBeforeOrderByStartDesc(ownerId, LocalDateTime.now(), pageRequest);
+            case CURRENT:
+                return bookingRepository
+                        .getBookingsByItem_OwnerIdAndCurrentOrderByStartDesc(ownerId, pageRequest);
+            default:
+                return bookingRepository
+                        .getBookingsByItem_OwnerIdOrderByStartDesc(ownerId, pageRequest);
         }
     }
 }

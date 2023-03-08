@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.validation.Validation;
+import ru.practicum.shareit.util.Validation;
 
 import java.util.List;
 
@@ -22,9 +22,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto addUser(UserDto userDto) {
         User user = UserMapper.mapToUser(userDto);
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
         log.info("user has been added");
-        return UserMapper.mapToUserDto(user);
+        return UserMapper.mapToUserDto(savedUser);
     }
 
     @Transactional
