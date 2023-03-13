@@ -14,8 +14,10 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.exceptions.BookingStatusException;
+import ru.practicum.shareit.exceptions.ItemAvailableValidationException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dao.ItemRepository;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.util.Validation;
 
 import java.time.LocalDateTime;
@@ -35,8 +37,13 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     @Override
     public BookingResponseDto addBooking(Integer userId, BookingDto bookingDto) {
-        validation.validateUserId(userId);
-        validation.validateBookingDto(bookingDto);
+        validation.validateUser(userId);
+        Item item = itemRepository.findById(bookingDto.getItemId()).orElseThrow(() -> new ValidationException(
+                "item with id " + bookingDto.getItemId() + " not found"
+        ));
+        if (!item.getAvailable()) {
+            throw new ItemAvailableValidationException("item with id = " + bookingDto.getItemId() + " is not available now");
+        }
         Booking booking = bookingMapper.mapToBooking(bookingDto, userId);
         if (booking.getItem().getOwnerId() == userId) {
             log.info("user with id = " + userId + "can't book his own item");
@@ -50,9 +57,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponseDto approveBooking(Integer userId, Integer bookingId, boolean approved) {
-        validation.validateUserId(userId);
-        validation.validateBookingId(bookingId);
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow();
+        validation.validateUser(userId);
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ValidationException(
+                "booking with id " + bookingId + " not found"
+        ));
         if (!booking.getStatus().equals(BookingStatus.WAITING)) {
             log.info("it's impossible to change status of booking after approved");
             throw new BookingStatusException("it's impossible to change status of booking after approved");
@@ -75,9 +83,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingResponseDto findBookingById(Integer userId, Integer bookingId) {
-        validation.validateUserId(userId);
-        validation.validateBookingId(bookingId);
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow();
+        validation.validateUser(userId);
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() -> new ValidationException(
+                "booking with id " + bookingId + " not found"
+        ));
         int ownerOfItemId = itemRepository.findById(booking.getItem().getId()).orElseThrow().getOwnerId();
         int authorOfBookingId = booking.getBooker().getId();
         if (ownerOfItemId == userId || authorOfBookingId == userId) {
@@ -96,7 +105,7 @@ public class BookingServiceImpl implements BookingService {
             BookingState state,
             PageRequest pageRequest
     ) {
-        validation.validateUserId(bookerId);
+        validation.validateUser(bookerId);
         List<Booking> bookingList = getAllBookingsForCurrentUserWithDependenceOfState(
                 bookerId,
                 state,
@@ -111,7 +120,7 @@ public class BookingServiceImpl implements BookingService {
             BookingState state,
             PageRequest pageRequest
     ) {
-        validation.validateUserId(ownerId);
+        validation.validateUser(ownerId);
         List<Booking> bookingList = getAllBookingsForItemsOfOwnerWithDependenceOfState(
                 ownerId,
                 state,

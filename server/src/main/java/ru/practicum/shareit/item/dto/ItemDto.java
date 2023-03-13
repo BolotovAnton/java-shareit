@@ -6,9 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
 import java.util.Set;
 
 @Getter
@@ -17,16 +14,12 @@ import java.util.Set;
 @NoArgsConstructor
 public class ItemDto {
 
-    @Positive
     private Integer id;
 
-    @NotBlank
     private String name;
 
-    @NotBlank
     private String description;
 
-    @NotNull
     private Boolean available;
 
     private BookingShortDto lastBooking;

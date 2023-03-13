@@ -9,8 +9,6 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.request.model.ItemRequest;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
 import java.util.Set;
 
 @Getter
@@ -27,8 +25,6 @@ public class User {
 
     private String name;
 
-    @NotBlank
-    @Email
     @Column(unique = true)
     private String email;
 

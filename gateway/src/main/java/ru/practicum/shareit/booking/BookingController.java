@@ -1,13 +1,12 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.exceptions.BookingStatusException;
+import ru.practicum.shareit.exceptions.BookingStateException;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
@@ -16,7 +15,6 @@ import javax.validation.constraints.PositiveOrZero;
 @Controller
 @RequestMapping(path = "/bookings")
 @RequiredArgsConstructor
-@Slf4j
 @Validated
 public class BookingController {
     private final BookingClient bookingClient;
@@ -53,7 +51,7 @@ public class BookingController {
             @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
             @Positive @RequestParam(defaultValue = "10") Integer size) {
         BookingState state = BookingState.from(stateParam)
-                .orElseThrow(() -> new BookingStatusException("Unknown state: " + stateParam));
+                .orElseThrow(() -> new BookingStateException("Unknown state: " + stateParam));
         return bookingClient.findAllBookingsForCurrentUser(bookerId, state, from, size);
     }
 
@@ -64,7 +62,7 @@ public class BookingController {
             @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
             @Positive @RequestParam(defaultValue = "10") Integer size) {
         BookingState state = BookingState.from(stateParam)
-                .orElseThrow(() -> new BookingStatusException("Unknown state: " + stateParam));
+                .orElseThrow(() -> new BookingStateException("Unknown state: " + stateParam));
         return bookingClient.findAllBookingsForOwnerOfItems(ownerId, state, from, size);
     }
 }

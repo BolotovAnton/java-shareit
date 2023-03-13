@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.practicum.shareit.item.model.Item;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ItemRepository extends JpaRepository<Item, Integer> {
@@ -27,5 +26,5 @@ public interface ItemRepository extends JpaRepository<Item, Integer> {
             "from items as i " +
             "left join bookings as b on i.id = b.item_id " +
             "where i.id = ? and b.booker_id = ? and b.end_date < current_timestamp", nativeQuery = true)
-    List<Item> findItemsByIdAndBookerIdAndEndBeforeCurrent(Integer itemId, Integer bookerId, LocalDateTime localDateTime);
+    List<Item> findItemsByIdAndBookerIdAndEndBeforeCurrent(Integer itemId, Integer bookerId);
 }

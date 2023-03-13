@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.user.dto.UserMapper;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.dto.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.util.Validation;
 
@@ -31,23 +31,23 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public UserDto updateUser(Integer userId, UserDto userDto) {
-        validation.validateUserId(userId);
+        User userFromRepository = validation.validateUser(userId);
         if (userDto.getEmail() == null) {
-            userDto.setEmail(userRepository.findById(userId).orElseThrow().getEmail());
+            userDto.setEmail(userFromRepository.getEmail());
         }
         if (userDto.getName() == null) {
-            userDto.setName(userRepository.findById(userId).orElseThrow().getName());
+            userDto.setName(userFromRepository.getName());
         }
-        User user = UserMapper.mapToUser(userDto);
-        user.setId(userId);
-        userRepository.save(user);
+        User userForUpdate = UserMapper.mapToUser(userDto);
+        userForUpdate.setId(userId);
+        userRepository.save(userForUpdate);
         log.info("user has been updated");
-        return UserMapper.mapToUserDto(user);
+        return UserMapper.mapToUserDto(userForUpdate);
     }
 
     public UserDto findUserById(Integer userId) {
-        validation.validateUserId(userId);
-        UserDto userDto = UserMapper.mapToUserDto(userRepository.findById(userId).orElseThrow());
+        User user = validation.validateUser(userId);
+        UserDto userDto = UserMapper.mapToUserDto(user);
         log.info("user with id={} has been found", userId);
         return userDto;
     }
@@ -60,7 +60,6 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public void deleteUserById(Integer userId) {
-        validation.validateUserId(userId);
         userRepository.deleteById(userId);
         log.info("user with id={} has been deleted", userId);
     }

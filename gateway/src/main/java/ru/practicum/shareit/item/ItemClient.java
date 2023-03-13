@@ -8,9 +8,11 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.shareit.client.BaseClient;
+import ru.practicum.shareit.exceptions.CommentException;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
+import java.util.Collections;
 import java.util.Map;
 
 @Service
@@ -28,6 +30,7 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> addItem(int userId, ItemDto itemDto) {
+
         return post("", userId, itemDto);
     }
 
@@ -48,6 +51,9 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> searchItemsByText(String text, Integer from, Integer size) {
+        if (text.isBlank()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
         Map<String, Object> parameters = Map.of(
                 "text", text,
                 "from", from,
@@ -57,6 +63,9 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> addComment(Integer userId, Integer itemId, CommentDto commentDto) {
+        if (commentDto.getText().isBlank()) {
+            throw new CommentException("text of comment is empty");
+        }
         return post("/" + itemId + "/comment", userId, commentDto);
     }
 }

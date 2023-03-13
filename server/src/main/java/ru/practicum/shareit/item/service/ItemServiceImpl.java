@@ -6,20 +6,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.dao.BookingRepository;
+import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.exceptions.CommentException;
-import ru.practicum.shareit.item.dto.CommentMapper;
-import ru.practicum.shareit.item.dto.ItemMapper;
+import ru.practicum.shareit.exceptions.UserDidNotBookTheItemException;
+import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dao.CommentRepository;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.dto.CommentDto;
+import ru.practicum.shareit.item.dto.CommentMapper;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dao.ItemRequestRepository;
-import ru.practicum.shareit.user.dao.UserRepository;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.util.Validation;
 
 import java.time.LocalDateTime;
@@ -35,7 +36,6 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final Validation validation;
     private final BookingMapper bookingMapper;
@@ -44,10 +44,12 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     @Override
     public ItemDto addItem(Integer userId, ItemDto itemDto) {
-        validation.validateUserId(userId);
+        validation.validateUser(userId);
         Item item = ItemMapper.mapToItem(itemDto, userId);
         if (itemDto.getRequestId() != null) {
-            item.setRequest(itemRequestRepository.findById(itemDto.getRequestId()).orElseThrow());
+            item.setRequest(itemRequestRepository.findById(itemDto.getRequestId()).orElseThrow(
+                    () -> new ValidationException("request with id " + itemDto.getRequestId() + " not found")
+            ));
         }
         Item savedItem = itemRepository.save(item);
         log.info("item has been added");
@@ -57,30 +59,37 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     @Override
     public ItemDto updateItem(Integer userId, Integer itemId, ItemDto itemDto) {
-        validation.validateUserId(userId);
-        validation.validateItemId(itemId);
-        validation.validateUserIdForItem(userId, itemId);
+        validation.validateUser(userId);
+        Item itemFromRepository = itemRepository.findById(itemId).orElseThrow(() -> new ValidationException(
+                "item with id " + itemId + " not found"
+        ));
+        if (itemRepository.findById(itemId).orElseThrow().getOwnerId() != userId) {
+            log.info("user with id " + userId + " can't update item with id " + itemId);
+            throw new ValidationException("user with id " + userId + " can't update item with id " + itemId);
+        }
         if (itemDto.getName() == null) {
-            itemDto.setName(itemRepository.findById(itemId).orElseThrow().getName());
+            itemDto.setName(itemFromRepository.getName());
         }
         if (itemDto.getDescription() == null) {
-            itemDto.setDescription(itemRepository.findById(itemId).orElseThrow().getDescription());
+            itemDto.setDescription(itemFromRepository.getDescription());
         }
         if (itemDto.getAvailable() == null) {
-            itemDto.setAvailable(itemRepository.findById(itemId).orElseThrow().getAvailable());
+            itemDto.setAvailable(itemFromRepository.getAvailable());
         }
-        Item item = ItemMapper.mapToItem(itemDto, userId);
-        item.setId(itemId);
-        itemRepository.save(item);
+        Item itemForUpdate = ItemMapper.mapToItem(itemDto, userId);
+        itemForUpdate.setId(itemId);
+        itemRepository.save(itemForUpdate);
         log.info("item has been updated");
-        return ItemMapper.mapToItemDto(item);
+        return ItemMapper.mapToItemDto(itemForUpdate);
     }
 
     @Transactional
     @Override
     public ItemDto findItemById(Integer userId, Integer itemId) {
-        validation.validateItemId(itemId);
-        Item item = itemRepository.findById(itemId).orElseThrow();
+        validation.validateUser(userId);
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new ValidationException(
+                "item with id " + itemId + " not found"
+        ));
         ItemDto itemDto = setNextAndLastBookingForItem(item, LocalDateTime.now(), userId);
         log.info("item has been found");
         return itemDto;
@@ -88,7 +97,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> findAllItemsForUser(Integer userId, PageRequest pageRequest) {
-        validation.validateUserId(userId);
+        validation.validateUser(userId);
         Page<Item> itemList = itemRepository.findAllByOwnerId(userId, pageRequest);
         List<ItemDto> itemDtoList = new ArrayList<>();
         for (Item item : itemList) {
@@ -114,20 +123,18 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     @Override
     public CommentDto addComment(Integer userId, Integer itemId, CommentDto commentDto) {
-        validation.validateUserId(userId);
-        validation.validateItemId(itemId);
-        if (commentDto.getText().isBlank()) {
-            log.info("text of comment is empty");
-            throw new CommentException("text of comment is empty");
-        }
-        if (itemRepository.findItemsByIdAndBookerIdAndEndBeforeCurrent(itemId, userId, LocalDateTime.now()).isEmpty()) {
+        User user = validation.validateUser(userId);
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new ValidationException(
+                "item with id " + itemId + " not found"
+        ));
+        if (itemRepository.findItemsByIdAndBookerIdAndEndBeforeCurrent(itemId, userId).isEmpty()) {
             log.info("user with id = " + userId + " didn't book the item");
-            throw new CommentException("user with id = " + userId + " didn't book the item");
+            throw new UserDidNotBookTheItemException("user with id = " + userId + " didn't book the item");
         }
         Comment comment = new Comment();
         comment.setText(commentDto.getText());
-        comment.setItem(itemRepository.findById(itemId).orElseThrow());
-        comment.setAuthor(userRepository.findById(userId).orElseThrow());
+        comment.setItem(item);
+        comment.setAuthor(user);
         comment.setCreated(LocalDateTime.now());
         Comment saveComment = commentRepository.save(comment);
         log.info("comment has been added");

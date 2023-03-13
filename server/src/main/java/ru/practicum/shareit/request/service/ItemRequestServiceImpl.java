@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.request.dto.ItemRequestMapper;
 import ru.practicum.shareit.request.dao.ItemRequestRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
@@ -29,7 +30,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public ItemRequestDto addRequest(Integer userId, ItemRequestDto itemRequestDto) {
-        validation.validateUserId(userId);
+        validation.validateUser(userId);
         ItemRequest itemRequest = itemRequestMapper.mapToItemRequest(itemRequestDto, userId);
         ItemRequest savedRequest = itemRequestRepository.save(itemRequest);
         log.info("itemrequest has been added");
@@ -39,7 +40,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     @Transactional(readOnly = true)
     public List<ItemRequestDto> findRequestsOfUser(Integer userId, PageRequest pageRequest) {
-        validation.validateUserId(userId);
+        validation.validateUser(userId);
         if (userRepository.findById(userId).orElseThrow().getRequests().isEmpty()) {
             return Collections.emptyList();
         }
@@ -52,7 +53,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     @Transactional(readOnly = true)
     public List<ItemRequestDto> findAllRequests(Integer userId, PageRequest pageRequest) {
-        validation.validateUserId(userId);
+        validation.validateUser(userId);
         Page<ItemRequest> itemRequestList = itemRequestRepository.findItemRequestByRequesterIdIsNot(
                 userId, pageRequest);
         log.info("all requests without requests for user with id={} have been found", userId);
@@ -62,9 +63,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     @Transactional(readOnly = true)
     public ItemRequestDto findById(Integer userId, Integer requestId) {
-        validation.validateUserId(userId);
-        validation.validateRequestId(requestId);
-        ItemRequest itemRequest = itemRequestRepository.findById(requestId).orElseThrow();
+        validation.validateUser(userId);
+        ItemRequest itemRequest = itemRequestRepository.findById(requestId).orElseThrow(
+                () -> new ValidationException("request with id " + requestId + " not found")
+        );
         log.info("request with id={} has been found", requestId);
         return itemRequestMapper.mapToItemRequestDto(itemRequest);
     }

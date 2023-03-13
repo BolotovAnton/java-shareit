@@ -8,8 +8,6 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.request.model.ItemRequest;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.util.Set;
 
 @Getter
@@ -24,17 +22,13 @@ public class Item {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @NotBlank
     private String name;
 
-    @NotBlank
     private String description;
 
-    @NotNull
     @Column(name = "owner_id")
     private int ownerId;
 
-    @NotNull
     private Boolean available;
 
     @OneToMany(mappedBy = "item")
@@ -46,33 +40,6 @@ public class Item {
     @ManyToOne
     @JoinColumn(name = "item_request_id")
     private ItemRequest request;
-
-    public Item(Integer id, String name, String description, int ownerId, Boolean available) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.ownerId = ownerId;
-        this.available = available;
-    }
-
-    public Item(Integer id, String name, String description, int ownerId, Boolean available, ItemRequest itemRequest) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.ownerId = ownerId;
-        this.available = available;
-        this.request = itemRequest;
-    }
-
-    public Item(Integer id, String name, String description, int ownerId, Boolean available, Set<Comment> comments, ItemRequest request) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.ownerId = ownerId;
-        this.available = available;
-        this.comments = comments;
-        this.request = request;
-    }
 
     @Override
     public boolean equals(Object o) {

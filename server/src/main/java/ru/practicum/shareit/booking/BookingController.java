@@ -10,7 +10,6 @@ import ru.practicum.shareit.booking.model.BookingState;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.util.MyPageRequest;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -23,7 +22,7 @@ public class BookingController {
     @PostMapping
     public BookingResponseDto addBooking(
             @RequestHeader("X-Sharer-User-Id") Integer userId,
-            @Valid @RequestBody BookingDto bookingDto
+            @RequestBody BookingDto bookingDto
     ) {
         return bookingService.addBooking(userId, bookingDto);
     }

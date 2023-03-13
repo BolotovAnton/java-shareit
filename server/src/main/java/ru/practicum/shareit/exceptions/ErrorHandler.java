@@ -21,7 +21,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleValidationException(ItemAvailableValidationException e) {
+        public ErrorResponse handleValidationException(ItemAvailableValidationException e) {
         log.debug("Error {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
@@ -35,20 +35,6 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleStartTimeOfBookingIsAfterEndTimeException(StartTimeOfBookingIsAfterEndTimeException e) {
-        log.debug("Error {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleStartTimeAndEndTimeOfBookingShouldBeInTheFutureException(StartTimeAndEndTimeOfBookingShouldBeInTheFutureException e) {
-        log.debug("Error {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleBookingStatusException(BookingStatusException e) {
         log.debug("Error {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
@@ -56,7 +42,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleUserDidNotBookTheItemException(CommentException e) {
+    public ErrorResponse handleUserDidNotBookTheItemException(UserDidNotBookTheItemException e) {
         log.debug("Error {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
