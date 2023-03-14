@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dao.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.exceptions.UserDidNotBookTheItemException;
 import ru.practicum.shareit.exceptions.ValidationException;
 import ru.practicum.shareit.item.dao.CommentRepository;
@@ -142,8 +143,14 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private ItemDto setNextAndLastBookingForItem(Item item, LocalDateTime localDateTime, Integer userId) {
-        Booking nextBooking = bookingRepository.findFirstByItemAndStartAfterOrderByStartAsc(item, localDateTime);
-        Booking lastBooking = bookingRepository.findFirstByItemAndStartBeforeOrderByStartDesc(item, localDateTime);
+        Booking nextBooking = bookingRepository.findFirstByItemAndStatusAndStartAfterOrderByStartAsc(
+                item,
+                BookingStatus.APPROVED,
+                localDateTime);
+        Booking lastBooking = bookingRepository.findFirstByItemAndStatusAndStartBeforeOrderByStartDesc(
+                item,
+                BookingStatus.APPROVED,
+                localDateTime);
         ItemDto itemDto = ItemMapper.mapToItemDto(item);
         if (item.getOwnerId() == userId) {
             itemDto.setNextBooking(bookingMapper.mapToBookingShortDto(nextBooking));

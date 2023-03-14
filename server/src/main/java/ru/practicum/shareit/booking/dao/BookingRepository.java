@@ -23,9 +23,9 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     @Query("select b from Booking as b where b.booker.id = ?1 and current_timestamp between b.start and b.end order by b.start desc")
     Page<Booking> getBookingsByBookerIdAndCurrentOrderByStartDesc(Integer bookerId, PageRequest pageRequest);
 
-    Booking findFirstByItemAndStartBeforeOrderByStartDesc(Item item, LocalDateTime start);
+    Booking findFirstByItemAndStatusAndStartBeforeOrderByStartDesc(Item item, BookingStatus status, LocalDateTime start);
 
-    Booking findFirstByItemAndStartAfterOrderByStartAsc(Item item, LocalDateTime start);
+    Booking findFirstByItemAndStatusAndStartAfterOrderByStartAsc(Item item, BookingStatus status, LocalDateTime start);
 
     Page<Booking> getBookingsByItem_OwnerIdOrderByStartDesc(Integer ownerId, PageRequest pageRequest);
 
